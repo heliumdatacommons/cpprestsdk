@@ -77,6 +77,7 @@ elseif(ANDROID)
 elseif(UNIX) # This includes OSX
   find_package(Boost 1.54 REQUIRED COMPONENTS random chrono system thread regex filesystem)
   find_package(Threads REQUIRED)
+
   if(APPLE AND NOT OPENSSL_ROOT_DIR)
     # Prefer a homebrew version of OpenSSL over the one in /usr/lib
     file(GLOB OPENSSL_ROOT_DIR /usr/local/Cellar/openssl/*)
@@ -145,7 +146,38 @@ else()
 endif()
 
 # Compiler (not platform) specific settings
-if(ANDROID)
+if(CMAKE_COMPILE_FOR_IRODS)
+   find_package(IRODS 4.2.2 EXACT REQUIRED)
+
+   if (NOT IRODS_EXTERNALS_PACKAGE_ROOT)
+     set(IRODS_EXTERNALS_PACKAGE_ROOT "/opt/irods-externals" CACHE STRING "Choose the location of iRODS external packages." FORCE)
+     message(STATUS "Setting unspecified IRODS_EXTERNALS_PACKAGE_ROOT to '${IRODS_EXTERNALS_PACKAGE_ROOT}'. This is the correct setting for normal builds.")
+   endif()
+   macro(IRODS_MACRO_CHECK_DEPENDENCY_SET_FULLPATH_ADD_TO_IRODS_PACKAGE_DEPENDENCIES_LIST DEPENDENCY_NAME DEPENDENCY_SUBDIRECTORY)
+  IRODS_MACRO_CHECK_DEPENDENCY_SET_FULLPATH(${DEPENDENCY_NAME} ${DEPENDENCY_SUBDIRECTORY})
+  list(APPEND IRODS_PACKAGE_DEPENDENCIES_LIST irods-externals-${DEPENDENCY_SUBDIRECTORY})
+endmacro()
+string(REPLACE ";" ", " IRODS_PACKAGE_DEPENDENCIES_STRING "${IRODS_PACKAGE_DEPENDENCIES_LIST}")
+
+set(CMAKE_C_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang)
+set(CMAKE_CXX_COMPILER ${IRODS_EXTERNALS_FULLPATH_CLANG}/bin/clang++)
+set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
+   include(${IRODS_TARGETS_PATH})
+  message("-- Setting clang options using the iRods external lib")
+  if (NOT IRODS_EXTERNALS_CLANG)
+    set(IRODS_EXTERNALS_CLANG "/opt/irods-externals/clang3.8-0" CACHE STRING "Choose the location of the iRODS clang compiler." FORCE)
+    message(STATUS "Setting unspecified IRODS_EXTERNALS_CLANG to '${IRODS_EXTERNALS_CLANG}'.")
+endif()
+
+  set(WARNINGS "-Wall -Wextra -Wcast-qual -Wconversion -Wformat=2 -Winit-self -Winvalid-pch -Wmissing-format-attribute -Wmissing-include-dirs -Wpacked -Wredundant-decls")
+  set(OSX_SUPPRESSIONS "-Wno-overloaded-virtual -Wno-sign-conversion -Wno-deprecated -Wno-unknown-pragmas -Wno-reorder -Wno-char-subscripts -Wno-switch -Wno-unused-parameter -Wno-unused-variable -Wno-deprecated -Wno-unused-value -Wno-unknown-warning-option -Wno-return-type-c-linkage -Wno-unused-function -Wno-sign-compare -Wno-shorten-64-to-32 -Wno-reorder -Wno-unused-local-typedefs")
+  set(WARNINGS "${WARNINGS} ${OSX_SUPPRESSIONS}")
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -Wno-return-type-c-linkage -Wno-unneeded-internal-declaration")
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-strict-aliasing")
+
+elseif(ANDROID)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-strict-aliasing")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pedantic")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes -Wno-pointer-arith")
@@ -166,6 +198,7 @@ elseif((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR IOS)
   set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-strict-aliasing")
+
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   message("-- Setting gcc options")
 
@@ -174,6 +207,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   set(LD_FLAGS "${LD_FLAGS} -Wl,-z,defs")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-strict-aliasing")
+
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   message("-- Setting msvc options")
   set(WARNINGS)
