@@ -1,5 +1,9 @@
 ## Welcome!
 
+This is a helium data commons fork of the Microsoft cpprest library. The only current change is that we have added a branch called 2.9.1-helium. This branch contains a CMakeLists.txt file with a stanza that allows you to build this library using the iRODS cmake, boost and clang environment. Once you've done that, you can build a version of the Microsft libazure that you can use to build an irods compatabile azure resource plugin. An example invocation of cmake would be
+
+/opt/irods-externals/cmake3.5.2-0/bin/cmake .. -DCMAKE_COMPILE_FOR_IRODS:BOOL=on -DBOOST_ROOT:STRING=/opt/irods-externals/boost1.60.0-0/
+
 The C++ REST SDK is a Microsoft project for cloud-based client-server communication in native code using a modern asynchronous C++ API design. This project aims to help C++ developers connect to and interact with services.  
 
 ## Getting Started
